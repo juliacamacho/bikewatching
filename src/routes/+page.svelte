@@ -24,13 +24,32 @@
         });
 
         map.addLayer({
-            id: "bikelanes", // A name for our layer (up to you)
+            id: "boston_bikelanes", // A name for our layer (up to you)
             type: "line", // one of the supported layer types, e.g. line, circle, etc.
             source: "boston_route", // The id we specified in `addSource()`
             paint: {
-                // paint params, e.g. colors, thickness, etc.
+                "line-color": "green",
+                "line-width": 4,
+                "line-opacity": 0.4
             },
         });
+
+        map.addSource("cambridge_route", {
+            type: "geojson",
+            data: "https://raw.githubusercontent.com/cambridgegis/cambridgegis_data/main/Recreation/Bike_Facilities/RECREATION_BikeFacilities.geojson"
+        });
+
+        map.addLayer({
+            id: "cambridge_bikelanes", // A name for our layer (up to you)
+            type: "line", // one of the supported layer types, e.g. line, circle, etc.
+            source: "cambridge_route", // The id we specified in `addSource()`
+            paint: {
+                "line-color": "green",
+                "line-width": 4,
+                "line-opacity": 0.4
+            },
+        });
+
     };
 
 </script>
