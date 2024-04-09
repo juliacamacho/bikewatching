@@ -123,6 +123,10 @@
     $: timeFilterLabel = new Date(0, 0, 0, 0, timeFilter)
                      .toLocaleString("en", {timeStyle: "short"});
 
+    let stationFlow = d3.scaleQuantize()
+        .domain([0, 1])
+        .range([0, 0.5, 1]);
+
 </script>
 
 <h1>Bikewatching</h1>
@@ -142,11 +146,18 @@
 	<svg>
         {#key mapViewChanged}
             {#each filteredStations as station}
-                <circle { ...getCoords(station) } r={radiusScale(station.totalTraffic)} />
+                <circle { ...getCoords(station) } r={radiusScale(station.totalTraffic)} 
+                style="--departure-ratio: { stationFlow(station.departures / station.totalTraffic) }" />
             {/each}
         {/key}
     </svg>
 </div>
+<div class="legend">
+	<div style="--departure-ratio: 1">More departures</div>
+	<div style="--departure-ratio: 0.5">Balanced</div>
+	<div style="--departure-ratio: 0">More arrivals</div>
+</div>
+
 
 
 <style>
@@ -165,6 +176,33 @@
             fill-opacity: 60%;
             stroke: white;
         }
+    }
+
+    #map svg circle, .legend > div {
+        --color-departures: steelblue;
+        --color-arrivals: darkorange;
+        --color: color-mix(
+            in oklch,
+            var(--color-departures) calc(100% * var(--departure-ratio)),
+            var(--color-arrivals)
+        );
+        fill: var(--color);
+        background-color: var(--color);
+    }
+
+    .legend {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1em;
+        color: white;
+        font-weight: bold;
+    }
+
+    .legend > div {
+        padding-left: 1em;
+        padding-right: 1em;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
     }
 
     em {
