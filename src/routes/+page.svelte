@@ -13,6 +13,26 @@
     let arrivals;
     let totalTraffic;
 
+    $: filteredTrips = timeFilter === -1? trips : trips.filter(trip => {
+        let startedMinutes = minutesSinceMidnight(trip.started_at);
+        let endedMinutes = minutesSinceMidnight(trip.ended_at);
+        return Math.abs(startedMinutes - timeFilter) <= 60
+            || Math.abs(endedMinutes - timeFilter) <= 60;
+    });
+
+    $: filteredDepartures = d3.rollup(filteredTrips, v => v.length, d => d.start_station_id);
+    
+    $: filteredArrivals = d3.rollup(filteredTrips, v => v.length, d => d.end_station_id);
+
+    $: filteredStations = stations.map(station => {
+        let id = station.Number;
+        station = {...station};
+        station.departures = filteredDepartures.get(id) ?? 0;
+        station.arrivals = filteredArrivals.get(id) ?? 0;
+        station.totalTraffic = station.departures + station.arrivals;
+        return station;
+    });
+
     let radiusScale;
     $: radiusScale = d3.scaleSqrt()
 	.domain([0, d3.max(stations, d => d.totalTraffic)])
@@ -24,7 +44,15 @@
     onMount(async () => {
         await createMap();
         stations = await d3.csv("https://vis-society.github.io/labs/8/data/bluebikes-stations.csv");
-        trips = await d3.csv("https://vis-society.github.io/labs/8/data/bluebikes-traffic-2024-03.csv");
+        // trips = await d3.csv("https://vis-society.github.io/labs/8/data/bluebikes-traffic-2024-03.csv");
+        trips = await d3.csv("https://vis-society.github.io/labs/8/data/bluebikes-traffic-2024-03.csv").then(trips => {
+            for (let trip of trips) {
+                trip.started_at = new Date(trip.started_at);
+                trip.ended_at = new Date(trip.ended_at);
+            }
+            return trips;
+        });
+
         departures = d3.rollup(trips, v => v.length, d => d.start_station_id);
         arrivals = d3.rollup(trips, v => v.length, d => d.end_station_id);
         stations = stations.map(station => {
@@ -37,6 +65,9 @@
         // console.log("stations:", stations);
     });
 
+    function minutesSinceMidnight (date) {
+        return date.getHours() * 60 + date.getMinutes();
+    }
 
     function getCoords (station) {
         let point = new mapboxgl.LngLat(+station.Long, +station.Lat);
@@ -110,7 +141,7 @@
 <div id="map">
 	<svg>
         {#key mapViewChanged}
-            {#each stations as station}
+            {#each filteredStations as station}
                 <circle { ...getCoords(station) } r={radiusScale(station.totalTraffic)} />
             {/each}
         {/key}
