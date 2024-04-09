@@ -1,16 +1,28 @@
 <script>
     import mapboxgl from "mapbox-gl";
+    import * as d3 from "d3";
     import "../../node_modules/mapbox-gl/dist/mapbox-gl.css";
     mapboxgl.accessToken = "pk.eyJ1IjoianVsaWFjYyIsImEiOiJjbHVyNWo0aDcwM2p4MmlvM2RmNDN3NnA3In0.akewVVgfBwvektMVj8KnfQ";
 
     import { onMount } from "svelte";
 
-    onMount(() => {
-        createMap();
+    let map;
+    let stations = [];
+
+    onMount(async () => {
+        await createMap();
+        stations = await d3.csv("https://vis-society.github.io/labs/8/data/bluebikes-stations.csv");
+        // console.log(data);
     });
 
+    function getCoords (station) {
+        let point = new mapboxgl.LngLat(+station.Long, +station.Lat);
+        let {x, y} = map.project(point);
+        return {cx: x, cy: y};
+    };
+
     async function createMap() {
-        let map = new mapboxgl.Map({
+        map = new mapboxgl.Map({
             container: "map",
             style: "mapbox://styles/mapbox/streets-v12",
             center: [-71.09415, 42.36027],
@@ -52,12 +64,31 @@
 
     };
 
+
 </script>
 
 <h1>Bikewatching</h1>
 <p>This page displays Boston's bike traffic throughout the day.</p>
-<div id="map" />
+<div id="map">
+	<svg>
+        {#each stations as station}
+            <circle { ...getCoords(station) } r="5" fill="steelblue" />
+        {/each}
+    </svg>
+</div>
+
 
 <style>
     @import url("$lib/global.css");
+
+    #map svg {
+        position: absolute;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        /* background: yellow;
+        opacity: 50%; */
+    }
+
 </style>
