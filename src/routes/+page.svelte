@@ -8,12 +8,35 @@
 
     let map;
     let stations = [];
+    let trips = [];
+    let departures;
+    let arrivals;
+    let totalTraffic;
+
+    let radiusScale;
+    $: radiusScale = d3.scaleSqrt()
+	.domain([0, d3.max(stations, d => d.totalTraffic)])
+	.range([0, 25]);
+
+    let mapViewChanged = 0;
+    $: map?.on("move", evt => mapViewChanged++);
 
     onMount(async () => {
         await createMap();
         stations = await d3.csv("https://vis-society.github.io/labs/8/data/bluebikes-stations.csv");
-        // console.log(data);
+        trips = await d3.csv("https://vis-society.github.io/labs/8/data/bluebikes-traffic-2024-03.csv");
+        departures = d3.rollup(trips, v => v.length, d => d.start_station_id);
+        arrivals = d3.rollup(trips, v => v.length, d => d.end_station_id);
+        stations = stations.map(station => {
+            let id = station.Number;
+            station.departures = departures.get(id) ?? 0;
+            station.arrivals = arrivals.get(id) ?? 0;
+            station.totalTraffic = station.departures + station.arrivals;
+            return station;
+        });
+        // console.log("stations:", stations);
     });
+
 
     function getCoords (station) {
         let point = new mapboxgl.LngLat(+station.Long, +station.Lat);
@@ -71,9 +94,11 @@
 <p>This page displays Boston's bike traffic throughout the day.</p>
 <div id="map">
 	<svg>
-        {#each stations as station}
-            <circle { ...getCoords(station) } r="5" fill="steelblue" />
-        {/each}
+        {#key mapViewChanged}
+            {#each stations as station}
+                <circle { ...getCoords(station) } r={radiusScale(station.totalTraffic)} />
+            {/each}
+        {/key}
     </svg>
 </div>
 
@@ -89,6 +114,11 @@
         pointer-events: none;
         /* background: yellow;
         opacity: 50%; */
+        circle {
+            fill: steelblue;
+            fill-opacity: 60%;
+            stroke: white;
+        }
     }
 
 </style>
