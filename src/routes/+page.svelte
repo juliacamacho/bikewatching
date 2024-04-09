@@ -87,11 +87,26 @@
 
     };
 
+    let timeFilter = -1;
+
+    $: timeFilterLabel = new Date(0, 0, 0, 0, timeFilter)
+                     .toLocaleString("en", {timeStyle: "short"});
 
 </script>
 
 <h1>Bikewatching</h1>
 <p>This page displays Boston's bike traffic throughout the day.</p>
+<label>
+    Filter by time:
+    <input type=range min=-1 max=1440 bind:value={timeFilter}>
+    {#if timeFilter != -1}
+        <time>{timeFilterLabel}</time>
+    {/if}
+    {#if timeFilter == -1}
+        <em>(any time)</em>
+    {/if}
+</label>
+
 <div id="map">
 	<svg>
         {#key mapViewChanged}
@@ -119,6 +134,14 @@
             fill-opacity: 60%;
             stroke: white;
         }
+    }
+
+    em {
+        color: gray;
+    }
+
+    label {
+        margin-bottom: 1em;
     }
 
 </style>
